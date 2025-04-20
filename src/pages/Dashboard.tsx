@@ -4,142 +4,141 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
-  CircularProgress,
   Avatar,
+  Container,
+  AppBar,
+  Toolbar,
   Button,
-  Chip,
-  Divider,
-  Tooltip,
 } from "@mui/material";
-import { auth, db } from "../firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import Masonry from "@mui/lab/Masonry";
+import { db, auth } from "./firebase";
+import { collection, getDocs, Timestamp } from "firebase/firestore";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
-interface Checkin {
-  id: string;
-  email: string;
-  photoUrl?: string;
-  timestamp: any;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
-}
-
 export default function Dashboard() {
-  const [checkins, setCheckins] = useState<Checkin[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [checkIns, setCheckIns] = useState<any[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCheckins = async () => {
-      try {
-        const allCheckins: Checkin[] = [];
+    const fetchData = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
 
-        const usersSnapshot = await getDocs(collection(db, "users"));
-        for (const userDoc of usersSnapshot.docs) {
-          const checkinRef = collection(db, "users", userDoc.id, "checkins");
-          const checkinSnapshot = await getDocs(query(checkinRef, orderBy("timestamp", "desc")));
-
-          checkinSnapshot.forEach((doc) => {
-            const data = doc.data();
-            allCheckins.push({
-              id: doc.id,
-              email: data.email,
-              photoUrl: data.photoUrl,
-              timestamp: data.timestamp?.toDate(),
-              location: data.location,
-            });
-          });
-        }
-
-        setCheckins(allCheckins);
-      } catch (err) {
-        console.error("Error fetching checkins:", err);
-      } finally {
-        setLoading(false);
-      }
+      const snapshot = await getDocs(
+        collection(db, "users", user.uid, "checkins")
+      );
+      const data = snapshot.docs.map((doc) => doc.data());
+      setCheckIns(data);
     };
 
-    fetchCheckins();
+    fetchData();
   }, []);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await auth.signOut();
     navigate("/");
   };
 
   return (
-    <Box sx={{ p: 4, backgroundColor: "#f9f9fc", minHeight: "100vh" }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4" fontWeight="bold" color="#2b2d42">
-          🏔️ PeakDash - Check-In History
-        </Typography>
-        <Button variant="outlined" color="error" onClick={handleLogout}>
-          Log Out
-        </Button>
+    <>
+      <AppBar position="sticky" elevation={0} color="default">
+        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Typography variant="h6" fontWeight="bold">
+            PeakPath 🧗
+          </Typography>
+          <Button color="error" variant="outlined" onClick={handleLogout}>
+            Logout
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      <Box
+        sx={{
+          background: "linear-gradient(to right, #fdfbfb, #ebedee)",
+          minHeight: "100vh",
+          py: 6,
+        }}
+      >
+        <Container maxWidth="lg">
+          <Typography
+            variant="h4"
+            fontWeight="bold"
+            gutterBottom
+            textAlign="center"
+          >
+            🧠 Your Check-In Timeline
+          </Typography>
+
+          <Masonry columns={{ xs: 1, sm: 2, md: 3 }} spacing={3}>
+            {checkIns.map((checkIn, i) => {
+              const timestamp = checkIn.timestamp;
+              const date =
+                timestamp instanceof Timestamp
+                  ? timestamp.toDate().toLocaleString()
+                  : timestamp?.seconds
+                  ? new Date(timestamp.seconds * 1000).toLocaleString()
+                  : "Unknown Date";
+
+              const cardHeight = Math.random() * 30 + 160;
+
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1, duration: 0.5 }}
+                >
+                  <Card
+                    sx={{
+                      height: cardHeight,
+                      borderRadius: 6,
+                      backdropFilter: "blur(10px)",
+                      background:
+                        "linear-gradient(135deg, rgba(255,255,255,0.6), rgba(245,245,245,0.8))",
+                      boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+                      transition: "0.3s ease",
+                      "&:hover": {
+                        transform: "scale(1.03)",
+                        boxShadow: "0 30px 60px rgba(0,0,0,0.2)",
+                      },
+                    }}
+                  >
+                    <CardContent>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Avatar
+                          src={checkIn.photoUrl}
+                          alt="Check-in"
+                          sx={{
+                            width: 60,
+                            height: 60,
+                            border: "2px solid white",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                          }}
+                        />
+                        <Box>
+                          <Typography fontWeight={600}>{date}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            📍{" "}
+                            {checkIn.location
+                              ? `${checkIn.location.latitude.toFixed(
+                                  2
+                                )}, ${checkIn.location.longitude.toFixed(2)}`
+                              : "No location"}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Typography sx={{ mt: 2 }}>
+                        ✅ Check-in complete. Keep up the streak!
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </Masonry>
+        </Container>
       </Box>
-
-      {loading ? (
-        <Box display="flex" justifyContent="center" mt={10}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <Grid container spacing={4}>
-          {checkins.map((checkin) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={checkin.id}>
-              <Card
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  boxShadow: 3,
-                  transition: "all 0.3s ease",
-                  ":hover": { boxShadow: 6, transform: "translateY(-4px)" },
-                }}
-              >
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar
-                    src={checkin.photoUrl}
-                    alt={checkin.email}
-                    sx={{ width: 56, height: 56 }}
-                  />
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight="600">
-                      {checkin.email}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {checkin.timestamp?.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Divider sx={{ my: 2 }} />
-
-                <CardContent sx={{ p: 0 }}>
-                  {checkin.location ? (
-                    <Tooltip title="Gym Location" arrow>
-                      <Chip
-                        label={`📍 ${checkin.location.latitude.toFixed(
-                          4
-                        )}, ${checkin.location.longitude.toFixed(4)}`}
-                        variant="outlined"
-                        color="primary"
-                        sx={{ fontSize: "0.75rem" }}
-                      />
-                    </Tooltip>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No location data
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-    </Box>
+    </>
   );
 }
