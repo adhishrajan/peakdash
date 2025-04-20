@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   Container,
   Typography,
-  Grid,
   Card,
   CardContent,
   Select,
@@ -15,9 +14,6 @@ import {
 import {
   collection,
   getDocs,
-  query,
-  where,
-  Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import {
@@ -60,7 +56,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchFlatAnalytics = async () => {
       const logs: AnalyticsEvent[] = [];
-
       const snapshot = await getDocs(collection(db, "all_analytics_logs"));
       snapshot.forEach((doc) => {
         const data = doc.data();
@@ -68,7 +63,6 @@ export default function AdminDashboard() {
           logs.push(data as AnalyticsEvent);
         }
       });
-
       setAnalytics(logs);
       setLoading(false);
     };
@@ -133,14 +127,13 @@ export default function AdminDashboard() {
         📊 Admin Analytics Dashboard
       </Typography>
 
-      <Box display="flex" gap={3} mb={4}>
-        <FormControl>
+      <Box display="flex" gap={3} flexWrap="wrap" mb={4}>
+        <FormControl sx={{ minWidth: 180 }}>
           <InputLabel>Filter by Screen</InputLabel>
           <Select
             value={screenFilter}
             label="Filter by Screen"
             onChange={(e) => setScreenFilter(e.target.value)}
-            sx={{ minWidth: 180 }}
           >
             <MenuItem value="all">All Screens</MenuItem>
             {allScreens.map((screen) => (
@@ -151,13 +144,12 @@ export default function AdminDashboard() {
           </Select>
         </FormControl>
 
-        <FormControl>
+        <FormControl sx={{ minWidth: 180 }}>
           <InputLabel>Time Range</InputLabel>
           <Select
             value={timeRange}
             label="Time Range"
             onChange={(e) => setTimeRange(e.target.value)}
-            sx={{ minWidth: 180 }}
           >
             {timeOptions.map((opt) => (
               <MenuItem key={opt.value} value={opt.value}>
@@ -173,9 +165,9 @@ export default function AdminDashboard() {
           <CircularProgress />
         </Box>
       ) : (
-        <Grid container spacing={4}>
+        <Box display="flex" flexWrap="wrap" gap={4}>
           {/* Avg Duration */}
-          <Grid item xs={12} md={6}>
+          <Box width={{ xs: "100%", md: "48%" }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -186,15 +178,19 @@ export default function AdminDashboard() {
                     <XAxis dataKey="screen" />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="avgDuration" fill="#1976d2" radius={[6, 6, 0, 0]} />
+                    <Bar
+                      dataKey="avgDuration"
+                      fill="#1976d2"
+                      radius={[6, 6, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Event Type Breakdown */}
-          <Grid item xs={12} md={6}>
+          <Box width={{ xs: "100%", md: "48%" }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -213,7 +209,10 @@ export default function AdminDashboard() {
                       label
                     >
                       {eventTypeData.map((_, i) => (
-                        <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+                        <Cell
+                          key={`cell-${i}`}
+                          fill={COLORS[i % COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip />
@@ -222,10 +221,10 @@ export default function AdminDashboard() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Line Chart of Events Over Time */}
-          <Grid item xs={12}>
+          <Box width="100%">
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -246,8 +245,8 @@ export default function AdminDashboard() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       )}
     </Container>
   );
