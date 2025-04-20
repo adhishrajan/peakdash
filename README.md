@@ -1,12 +1,6 @@
 # React + TypeScript + Vite
 
-
-TO RUN:
-
-```js
-npm install
-npm run dev
-```
+# HOSTED on https://peakdash-h71d.vercel.app/admin
 
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
